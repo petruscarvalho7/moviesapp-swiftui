@@ -2,16 +2,21 @@
 //  MovieFanApp.swift
 //  MovieFan
 //
-//  Created by Rolan on 9/4/22.
+//  Created by Petrus Carvalho on 03/06/23.
 //
 
 import SwiftUI
 
 @main
 struct MovieFanApp: App {
+    let viewModel = MoviesViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                MoviesView()
+                    .environmentObject(viewModel)
+            }
         }
     }
 }

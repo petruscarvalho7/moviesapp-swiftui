@@ -2,7 +2,7 @@
 //  MovieFanUITestsLaunchTests.swift
 //  MovieFanUITests
 //
-//  Created by Rolan on 9/4/22.
+//  Created by Petrus Carvalho on 03/06/23.
 //
 
 import XCTest
