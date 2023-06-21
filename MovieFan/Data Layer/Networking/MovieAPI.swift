@@ -9,10 +9,12 @@ import Foundation
 import Alamofire
 
 typealias MovieAPIResponse = (Swift.Result<[Movie]?, DataError>) -> Void
+typealias MovieTopRatedAPIResponse = (Swift.Result<[MovieTopRated]?, DataError>) -> Void
 
 /// API interface to retrieve movies
 protocol MovieAPILogic {
     func getMovies(completion: @escaping (MovieAPIResponse))
+    func getTopRatedMovies(completion: @escaping (MovieTopRatedAPIResponse))
 }
 
 class MovieAPI: MovieAPILogic {
@@ -20,19 +22,25 @@ class MovieAPI: MovieAPILogic {
     private struct Constants {
         static let apiKey = "80120157161f4f3fe777f9be42095902"
         static let languageLocale = "en-US"
-        static let moviesURL = "https://api.themoviedb.org/3/movie/popular?api_key=\(apiKey)&language=\(languageLocale)&page=\(pageValue)"
+        // base urls
+        static let moviesURLBase = "https://api.themoviedb.org/3/movie/"
+        static let apiLanguagePageInfo = "api_key=\(apiKey)&language=\(languageLocale)&page=\(pageValue)"
+        
+        // rest apis
+        static let moviesPopular = moviesURLBase + "popular?" + apiLanguagePageInfo
+        static let moviesTopRated = moviesURLBase + "top_rated?" + apiLanguagePageInfo
+        
+        // params and types
         static let pageValue = 1
         static let rParameter = "r"
         static let json = "json"
     }
     
-    //https://image.tmdb.org/t/p/w500/8uO0gUM8aNqYLs1OsTBQiXu0fEv.jpg
-    
     func getMovies(completion: @escaping (MovieAPIResponse)) {
         // this prevents AF retrieving cached responses
         URLCache.shared.removeAllCachedResponses()
         
-        AF.request(Constants.moviesURL,
+        AF.request(Constants.moviesPopular,
                    method: .get,
                    encoding: URLEncoding.default)
         .validate()
@@ -42,6 +50,24 @@ class MovieAPI: MovieAPILogic {
                 completion(.failure(.networkingError(error.localizedDescription)))
             case .success(let moviesListResult):
                 completion(.success(moviesListResult.movies))
+            }
+        }
+    }
+    
+    func getTopRatedMovies(completion: @escaping (MovieTopRatedAPIResponse)) {
+        // this prevents AF retrieving cached responses
+        URLCache.shared.removeAllCachedResponses()
+        
+        AF.request(Constants.moviesTopRated,
+                   method: .get,
+                   encoding: URLEncoding.default)
+        .validate()
+        .responseDecodable(of: MovieTopRatedRootResult.self) { response in
+            switch response.result {
+            case .failure(let error):
+                completion(.failure(.networkingError(error.localizedDescription)))
+            case .success(let moviesListResult):
+                completion(.success(moviesListResult.moviesTopRated))
             }
         }
     }
