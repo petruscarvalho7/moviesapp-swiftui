@@ -7,8 +7,11 @@
 
 import SwiftUI
 import Charts
+import CoreData
+import Combine
 
 struct MoviesView: View {
+    @Environment(\.managedObjectContext) var managedObjectContext: NSManagedObjectContext
     @EnvironmentObject var viewModel: MoviesViewModel
  
     var body: some View {
