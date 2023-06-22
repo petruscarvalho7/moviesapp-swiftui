@@ -20,7 +20,6 @@ class MoviesViewModel: ObservableObject {
     
     // Core Data
     private var persistentController = MoviePersistentController()
-    private var movieFetchRequest = MovieCoreData.fetchRequest()
     
     init(apiService: MovieAPILogic = MovieAPI()) {
         self.apiService = apiService
@@ -35,84 +34,19 @@ class MoviesViewModel: ObservableObject {
                 case .success(let movies):
                     self?.movies = movies ?? []
                     
-                    guard let movies = movies, !movies.isEmpty else { return }
-                    var moviesDict: [Int: Movie] = [:]
-
-                    for movie in movies {
-                        moviesDict[movie.id] = movie
-                    }
-                    
-                    // 1. get all core data movies (find any existing movies in CoreData)
-                    guard let movieFetchRequest = self?.movieFetchRequest else { return }
-                    movieFetchRequest.predicate = NSPredicate(
-                        format: "id IN %@",
-                        Array(moviesDict.keys)
-                    )
-                    
-                    // 2. make a fetchRequest using predicate
-                    guard let manageObjcContext = self?.persistentController.persistentContainer.viewContext else { return }
-                    let moviesDBList = try? manageObjcContext.fetch(movieFetchRequest)
-                    
-                    var moviesIdListInDB: [Int] = []
-                    
-                    // 3. update all match movies
-                    guard let moviesDBList = moviesDBList else { return }
-                    for movieDB in moviesDBList {
-                        moviesIdListInDB.append(Int(movieDB.id))
-                        if let movie = moviesDict[Int(movieDB.id)] {
-                            if movieDB.overview != movie.overview {
-                                movieDB.setValue(movie.overview, forKey: "overview")
-                            }
-                            if movieDB.imageUrlSuffix != movie.imageUrlSuffix {
-                                movieDB.setValue(movie.imageUrlSuffix, forKey: "imageUrlSuffix")
-                            }
-                            if movieDB.releaseDate != movie.releaseDate {
-                                movieDB.setValue(movie.releaseDate, forKey: "releaseDate")
-                            }
-                            if movieDB.title != movie.title {
-                                movieDB.setValue(movie.title, forKey: "title")
-                            }
-                        }
-                    }
-                    
-                    // 4. add new objs on local DB
-                    for movie in movies {
-                        if !moviesIdListInDB.contains(movie.id) {
-                            let movieDB = MovieCoreData(context: manageObjcContext)
-                            movieDB.id = Int64(movie.id)
-                            movieDB.title = movie.title
-                            movieDB.releaseDate = movie.releaseDate
-                            movieDB.overview = movie.overview
-                            movieDB.imageUrlSuffix = movie.imageUrlSuffix
-                            movieDB.largeImageUrl = movie.getLargeImageUrl()
-                            movieDB.thumbnailImageUrl = movie.getThumbnailImageUrl()
-                        }
-                    }
-                    
-                    // 5. save db
-                    try? manageObjcContext.save()
+                    self?.persistentController.updateAndAddData(movies: movies)
                 case .failure(let error):
                     self?.error = error
                 }
             }
         default:
-            do {
-                let moviesDBList = try persistentController.persistentContainer.viewContext
-                    .fetch(movieFetchRequest)
-                var moviesToList: [Movie] = []
-                for movieDB in moviesDBList {
-                    let movie = Movie(
-                        id: Int(movieDB.id),
-                        title: movieDB.title ?? "",
-                        releaseDate: movieDB.releaseDate ?? "",
-                        imageUrlSuffix: movieDB.imageUrlSuffix ?? "",
-                        overview: movieDB.overview ?? ""
-                    )
-                    moviesToList.append(movie)
+            self.persistentController.getDBDataToMovieData { [weak self] result in
+                switch result {
+                case.success(let movies):
+                    self?.movies = movies ?? []
+                case .failure(let error):
+                    self?.error = error
                 }
-                movies = moviesToList
-            } catch {
-                self.error = .coreDataError("Biggest zebra happened during coreData flow.")
             }
         }
     }
