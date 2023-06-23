@@ -7,12 +7,17 @@
 
 import SwiftUI
 import Charts
-import CoreData
+//import CoreData
 import Combine
 
 struct MoviesView: View {
-    @Environment(\.managedObjectContext) var managedObjectContext: NSManagedObjectContext
     @EnvironmentObject var viewModel: MoviesViewModel
+    
+    // DP: Decorator to CoreData feature on the view
+    //    @Environment(\.managedObjectContext) var managedObjectContext: NSManagedObjectContext
+//    @FetchRequest(sortDescriptors: [
+//        SortDescriptor(\.title, order: .reverse)
+//    ]) var moviesDBList: FetchedResults<MovieCoreData>
  
     var body: some View {
         TabView {

@@ -14,15 +14,25 @@ class MoviesViewModel: ObservableObject {
     @Published private(set) var moviesTopRated: [MovieTopRated] = []
     @Published private(set) var error: DataError? = nil
     
-    private var networkConnectivity = NWPathMonitor()
+    private var networkConnectivity: NWPathMonitor
     
     private let apiService: MovieAPILogic
     
     // Core Data
-    private var persistentController = MoviePersistentController()
+    private var persistentController: MoviePersistentController
+    private var persistentTopRatedController: MovieTopRatedPersistentController
     
-    init(apiService: MovieAPILogic = MovieAPI()) {
+    init(apiService: MovieAPILogic = MovieAPI(),
+         persistentController: MoviePersistentController = MoviePersistentController(),
+         networkConnectivity: NWPathMonitor = NWPathMonitor(),
+         persistentTopRatedController: MovieTopRatedPersistentController = MovieTopRatedPersistentController()
+    ) {
         self.apiService = apiService
+        self.persistentController = persistentController
+        self.networkConnectivity = networkConnectivity
+        self.persistentTopRatedController = persistentTopRatedController
+        
+        // network connection listener
         networkConnectivity.start(queue: DispatchQueue.global(qos: .userInitiated))
     }
     
@@ -60,11 +70,19 @@ class MoviesViewModel: ObservableObject {
                     self?.error = error
                 case .success(let moviesTopRated):
                     self?.moviesTopRated = moviesTopRated ?? []
+                    
+                    self?.persistentTopRatedController.updateAndAddDataMoviesTopRated(movies: moviesTopRated)
                 }
             }
         default:
-            // todo get db data
-            break
+            self.persistentTopRatedController.getDBDataToMovieTopRatedData { [weak self] result in
+                switch result {
+                case.success(let moviesTopRated):
+                    self?.moviesTopRated = moviesTopRated ?? []
+                case .failure(let error):
+                    self?.error = error
+                }
+            }
         }
     }
     

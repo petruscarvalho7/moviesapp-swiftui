@@ -1,21 +1,20 @@
 //
-//  MoviePersistentController.swift
+//  MovieTopRatedPersistentController.swift
 //  MovieFan
 //
-//  Created by Petrus Carvalho on 21/06/23.
+//  Created by Petrus Carvalho on 23/06/23.
 //
 
 import Foundation
 import CoreData
 
-class MoviePersistentController: ObservableObject {
+class MovieTopRatedPersistentController: ObservableObject {
     var persistentContainer = NSPersistentContainer(name: "MovieFan")
     
-    private var movieFetchRequest = MovieCoreData.fetchRequest()
+    private var movieFetchRequest = MovieTopRatedCoreData.fetchRequest()
     
     private struct Constants {
         static let sortTitle = NSSortDescriptor(key: "title", ascending: true)
-        static let sortReleaseDate = NSSortDescriptor(key: "releaseDate", ascending: true)
     }
     
     init() {
@@ -28,42 +27,43 @@ class MoviePersistentController: ObservableObject {
     
     fileprivate func sortData() {
         // sort
-        movieFetchRequest.sortDescriptors = [Constants.sortTitle, Constants.sortReleaseDate]
+        movieFetchRequest.sortDescriptors = [Constants.sortTitle]
     }
     
-    func getDBDataToMovieData(completion: @escaping (MovieAPIResponse)) {
+    func getDBDataToMovieTopRatedData(completion: @escaping (MovieTopRatedAPIResponse)) {
         do {
             sortData()
 
             let moviesDBList = try persistentContainer.viewContext
                 .fetch(movieFetchRequest)
-            var moviesToList: [Movie] = []
+            var moviesToList: [MovieTopRated] = []
             for movieDB in moviesDBList {
-                let movie = Movie(
+                let movie = MovieTopRated(
                     id: Int(movieDB.id),
                     title: movieDB.title ?? "",
-                    releaseDate: movieDB.releaseDate ?? "",
-                    imageUrlSuffix: movieDB.imageUrlSuffix ?? "",
-                    overview: movieDB.overview ?? ""
+                    popularity: movieDB.popularity,
+                    voteCount: Int(movieDB.voteCount),
+                    voteAverage: movieDB.voteAverage,
+                    posterImage: movieDB.posterImage ?? ""
                 )
                 moviesToList.append(movie)
             }
             completion(.success(moviesToList))
         } catch {
-            completion(.failure(.coreDataError("Biggest zebra happened during coreData flow.")))
+            completion(.failure(.coreDataError("(MovieTopRated) Biggest zebra happened during coreData flow.")))
         }
     }
     
-    func updateAndAddData(movies: [Movie]?) {
+    func updateAndAddDataMoviesTopRated(movies: [MovieTopRated]?) {
         guard let movies = movies, !movies.isEmpty else { return }
 
-        var moviesDict: [Int: Movie] = [:]
+        var moviesDict: [Int: MovieTopRated] = [:]
 
         for movie in movies {
             moviesDict[movie.id] = movie
         }
         
-        // 1. get all core data movies (find any existing movies in CoreData)
+        // 1. get all core data movies (find any existing moviesTopRated in CoreData)
         movieFetchRequest.predicate = NSPredicate(
             format: "id IN %@",
             Array(moviesDict.keys)
@@ -82,17 +82,20 @@ class MoviePersistentController: ObservableObject {
         for movieDB in moviesDBList {
             moviesIdListInDB.append(Int(movieDB.id))
             if let movie = moviesDict[Int(movieDB.id)] {
-                if movieDB.overview != movie.overview {
-                    movieDB.setValue(movie.overview, forKey: "overview")
-                }
-                if movieDB.imageUrlSuffix != movie.imageUrlSuffix {
-                    movieDB.setValue(movie.imageUrlSuffix, forKey: "imageUrlSuffix")
-                }
-                if movieDB.releaseDate != movie.releaseDate {
-                    movieDB.setValue(movie.releaseDate, forKey: "releaseDate")
-                }
                 if movieDB.title != movie.title {
                     movieDB.setValue(movie.title, forKey: "title")
+                }
+                if movieDB.popularity != movie.popularity {
+                    movieDB.setValue(movie.popularity, forKey: "popularity")
+                }
+                if movieDB.voteAverage != movie.voteAverage {
+                    movieDB.setValue(movie.voteAverage, forKey: "voteAverage")
+                }
+                if movieDB.voteCount != movie.voteCount {
+                    movieDB.setValue(movie.voteCount, forKey: "voteCount")
+                }
+                if movieDB.posterImage != movie.posterImage {
+                    movieDB.setValue(movie.posterImage, forKey: "posterImage")
                 }
             }
         }
@@ -100,12 +103,13 @@ class MoviePersistentController: ObservableObject {
         // 4. add new objs on local DB
         for movie in movies {
             if !moviesIdListInDB.contains(movie.id) {
-                let movieDB = MovieCoreData(context: manageObjcContext)
+                let movieDB = MovieTopRatedCoreData(context: manageObjcContext)
                 movieDB.id = Int64(movie.id)
                 movieDB.title = movie.title
-                movieDB.releaseDate = movie.releaseDate
-                movieDB.overview = movie.overview
-                movieDB.imageUrlSuffix = movie.imageUrlSuffix
+                movieDB.popularity = movie.popularity
+                movieDB.voteAverage = movie.voteAverage
+                movieDB.voteCount = Int64(movie.voteCount)
+                movieDB.posterImage = movie.posterImage
             }
         }
         
