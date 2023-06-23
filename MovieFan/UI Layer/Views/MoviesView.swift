@@ -13,11 +13,12 @@ import Combine
 struct MoviesView: View {
     @EnvironmentObject var viewModel: MoviesViewModel
     
-    // DP: Decorator to CoreData feature on the view
-    //    @Environment(\.managedObjectContext) var managedObjectContext: NSManagedObjectContext
-//    @FetchRequest(sortDescriptors: [
-//        SortDescriptor(\.title, order: .reverse)
-//    ]) var moviesDBList: FetchedResults<MovieCoreData>
+    // DP: Decorator to CoreData feature on the View
+    // PS.: in the MVVM architecture, this approach below is not a good practice.
+    // @Environment(\.managedObjectContext) var managedObjectContext: NSManagedObjectContext
+    // @FetchRequest(sortDescriptors: [
+    //      SortDescriptor(\.title, order: .reverse)
+    // ]) var moviesDBList: FetchedResults<MovieCoreData>
  
     var body: some View {
         TabView {
